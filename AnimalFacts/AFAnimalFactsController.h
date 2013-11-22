@@ -11,7 +11,7 @@
 
 @interface AFAnimalFactsController : UITableViewController
 
-@property (nonatomic,strong) NSMutableArray * animals;
+@property (nonatomic,strong, readonly) NSArray * animals;
 @property (nonatomic,strong) AFAnimal * subject;
 @property (nonatomic,weak) IBOutlet UITableView * animalTableView;
 

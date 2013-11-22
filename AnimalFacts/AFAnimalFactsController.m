@@ -9,6 +9,7 @@
 #import "AFAnimalFactsController.h"
 #import "AFAnimalViewController.h"
 #import "AFAnimal.h"
+#import "AFAnimalController.h"
 
 @interface AFAnimalFactsController ()
 
@@ -28,31 +29,34 @@
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-    self.animals = [AFAnimal loadAnimals];
     [self sortAnimals];
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(saveSubject:)
-                                                 name:AFAnimalSubjectSaved
-                                               object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(clearSubject:)
-                                                 name:AFAnimalSubjectCancelled
-                                               object:nil];
+    
+    [[AFAnimalController sharedController] addObserver:self
+                                            forKeyPath:@"animals" options:NSKeyValueObservingOptionNew context:NULL];
+}
+
+- (void) observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context {
+    if ([keyPath isEqualToString:@"subject"]) {
+        // trigger the reload of just the one cell
+    }
+    
+    dispatch_async(dispatch_get_main_queue(), ^{
+       [self.tableView reloadData];
+    });
+}
+
+#pragma mark -
+- (NSArray*) animals {
+    return [AFAnimalController sharedController].animals;
 }
 
 - (void) removeAnimal:(AFAnimal *) animal {
-    [self.animals removeObject:animal];
     [self sortAnimals];
 }
 
 - (void) sortAnimals {
     NSArray *sortedArray;
     sortedArray = [self.animals sortedArrayUsingSelector:@selector(compare:)];
-    self.animals = [(NSArray*)sortedArray mutableCopy];
-}
-
-- (void) saveAnimals {
-    [AFAnimal saveAnimals:self.animals];
 }
 
 - (void) clearSubject:(id) sender {
@@ -62,18 +66,16 @@
 - (void) saveSubject:(id) sender {
     if (self.subject != nil) {
         if (![self.animals containsObject:self.subject]) {
-            [self.animals addObject:self.subject];
+///            [self.animals addObject:self.subject];
             [self sortAnimals];
         }
-        [self saveAnimals];
         [self.animalTableView reloadData];
     }
 }
 
 - (void) dealloc {
+    [[AFAnimalController sharedController] removeObserver:self forKeyPath:@"animals" context:NULL];
     [self clearSubject:nil];
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:AFAnimalSubjectSaved object:nil];
-    [[NSNotificationCenter defaultCenter] removeObserver:self name:AFAnimalSubjectCancelled object:nil];
 }
 
 #pragma mark - Table view data source
@@ -94,6 +96,9 @@
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:CellIdentifier forIndexPath:indexPath];
     
     AFAnimal * animal = self.animals[indexPath.row];
+    [animal addObserver:self
+             forKeyPath:@"subject"
+                options:NSKeyValueObservingOptionNew context:NULL];
     cell.textLabel.text = animal.name;
     return cell;
 }

@@ -8,6 +8,7 @@
 
 #import "AFAnimalViewController.h"
 #import "AFAnimal.h"
+#import "AFAnimalController.h"
 
 @import AssetsLibrary;
 
@@ -56,14 +57,17 @@
         [self.animalImageView sizeToFit];
         [self.photoButton setTitle:@"Pick Photo" forState:UIControlStateNormal];
     }
-    
 }
 
 - (void) saveToAnimal {
+    if (!self.animal) {
+        self.animal = [[AFAnimal alloc] init];
+    }
     self.animal.name = self.animalNameLabel.text;
     self.animal.fact = self.animalFactTextView.text;
     self.animal.picture = self.animalImageView.image;
-    [[NSNotificationCenter defaultCenter] postNotificationName:AFAnimalSubjectSaved object:self];
+    
+    [[AFAnimalController sharedController] addAnimal:self.animal];
 }
 
 - (IBAction) cancelButtonPushed:(id) sender {
@@ -101,6 +105,9 @@
 {
     UIImage *image = [info valueForKey:UIImagePickerControllerOriginalImage];
     self.animalImageView.image = image;
+    [self dismissViewControllerAnimated:YES completion:^{
+        
+    }];
 }
 
 - (void)imagePickerControllerDidCancel:(UIImagePickerController *)picker
